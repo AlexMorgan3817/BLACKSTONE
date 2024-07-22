@@ -323,7 +323,9 @@
 
 		if(C.headrebdecree)
 			end_reason = "The peasant rebels took control of the throne, hail the new community!"
-
+	else if(istype(SSticker.mode, /datum/game_mode/siege))
+		var/datum/game_mode/siege/C = SSticker.mode
+		end_reason = C.get_end_reason()
 
 	if(end_reason)
 		to_chat(world, "<span class='big bold'>[end_reason].</span>")

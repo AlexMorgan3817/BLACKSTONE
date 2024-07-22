@@ -64,6 +64,10 @@ GLOBAL_LIST_INIT(laws_of_the_land, initialize_laws_of_the_land())
 	var/notlord
 	if(SSticker.rulermob != H)
 		notlord = TRUE
+	if(istype(SSticker.mode, /datum/game_mode/siege))
+		var/datum/game_mode/siege/S = SSticker.mode
+		if(H.mind == S.Lord)
+			notlord = FALSE
 	var/message2recognize = sanitize_hear_message(raw_message)
 
 	if(mode)

@@ -241,6 +241,12 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/rp_prompt.txt"))
 			to_chat(usr, "<span class='danger'>The round is either not ready, or has already finished...</span>")
 			return
 
+		var/datum/game_mode/siege/S = SSticker.mode
+		if(istype(S) && S.Lord && S.Hand && S.enforcement_agenda.len == 0)
+		// if(istype(S) && S.Lord && S.Hand && S.enforcement_agenda.len == 0 && !CheckDonation(key, "Adventurer"))
+			to_chat(usr, "<span class='danger'>Лорд ещё не выбрал кто ему нужен.</span>")
+			return
+
 		if(!GLOB.enter_allowed)
 			to_chat(usr, "<span class='notice'>There is a lock on entering the game!</span>")
 			return
@@ -615,6 +621,18 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/rp_prompt.txt"))
 					if(column_counter > 0 && (column_counter % 3 == 0))
 						dat += "</td><td valign='top'>"
 					break
+			else if(istype(C, /datum/game_mode/siege))
+				var/datum/game_mode/siege/S = C
+				// dat += "<center><a class='job command' href='byond://?src=[REF(src)];SelectedJob=Adventurer'>"
+				dat += "<center><a class='job command' href='byond://?src=[REF(src)];SiegeSpawn=1'>"
+				if(!S.Lord)
+					dat += "Прошу, ваше величество, ваш военный лагерь!"
+				else if(!S.Hand)
+					dat += "Мой господин ждёт меня!"
+				else
+					dat += "В ГАРНИЗОН ЛОРДА ЗАВОЕВАТЕЛЯ"
+				dat += "</a></center></fieldset><br>"
+				break
 			
 			for(var/job in available_jobs)
 				var/datum/job/job_datum = SSjob.name_occupations[job]

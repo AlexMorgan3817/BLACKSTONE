@@ -30,7 +30,7 @@ GLOBAL_VAR_INIT(adventurer_hugbox_duration_still, 3 MINUTES)
 	display_order = JDO_ADVENTURER
 	show_in_credits = FALSE
 	min_pq = 0
-	
+
 	wanderer_examine = TRUE
 	advjob_examine = TRUE
 	var/isvillager = FALSE
@@ -41,6 +41,7 @@ GLOBAL_VAR_INIT(adventurer_hugbox_duration_still, 3 MINUTES)
 	if(L)
 		var/mob/living/carbon/human/H = L
 		H.advsetup = 1
+		GLOB.setuping_adventurers.Add(H)
 		H.invisibility = INVISIBILITY_MAXIMUM
 		H.become_blind("advsetup")
 		H.Stun(100)
@@ -49,12 +50,49 @@ GLOBAL_VAR_INIT(adventurer_hugbox_duration_still, 3 MINUTES)
 		if(GLOB.adventurer_hugbox_duration)
 			///FOR SOME RETARDED FUCKING REASON THIS REFUSED TO WORK WITHOUT A FUCKING TIMER IT JUST FUCKED SHIT UP
 			addtimer(CALLBACK(H, TYPE_PROC_REF(/mob/living/carbon/human, adv_hugboxing_start)), 1)
-		var/list/classes = GLOB.adv_classes.Copy()
+		var/list/classes = GLOB.adv_classes
 		var/list/special_classes = list()
 		var/classamt = 5
 		if(M.client)
 			// For every 5 positive PQ points, grant an extra choice for Adventurer classes
 			var/pq = get_playerquality(M.client.ckey, FALSE)
+			if(latejoin)
+				var/datum/game_mode/siege/C = SSticker.mode
+				if(istype(C) && !isvillager)
+					for(var/obj/structure/fluff/traveltile/siegespawn/T in shuffle(GLOB.traveltiles))
+						H.forceMove(get_turf(T))
+						break
+					if(!C.Lord && pq >= C.LordPQReq)
+						var/datum/advclass/siege_lord/A = find_adv_class(/datum/advclass/siege_lord)
+						if(A?.can_be_equiped(H))
+							H.advsetup = 0
+							GLOB.setuping_adventurers.Remove(H)
+							A.equipme(H)
+							H.invisibility = 0
+							H.cure_blind("advsetup")
+							C.Lord = H.mind
+							return
+					#ifndef FASTLOAD
+					if(!C.Hand && pq >= C.HandPQReq)
+						var/datum/advclass/A = find_adv_class(/datum/advclass/siege_hand)
+						if(A?.can_be_equiped(H))
+							H.advsetup = 0
+							GLOB.setuping_adventurers.Remove(H)
+							A.equipme(H)
+							H.invisibility = 0
+							H.cure_blind("advsetup")
+							C.Hand = H.mind
+							return
+					#endif FASTLOAD
+					classes = find_adv_class_types(/datum/advclass/siege_soldier)
+					#ifdef GOD_ASTRATA
+					if(CheckDonation(key, "Adventurer"))
+						H.possibleclass = ParseSiegeJobs(classes, H, ignore_agenda = TRUE)
+						return
+					#endif
+					if(length(C.enforcement_agenda))
+						H.possibleclass = ParseSiegeJobs(classes, H)
+					return
 			if(pq > 0)
 				classamt += floor(pq / 5)
 			if(M.client.patreonlevel() >= 1)
@@ -69,20 +107,10 @@ GLOBAL_VAR_INIT(adventurer_hugbox_duration_still, 3 MINUTES)
 #endif
 		for(var/I in shuffle(classes))
 			var/datum/advclass/A = I
-			if(length(A.allowed_sexes) && !(H.gender in A.allowed_sexes))
-				testing("[A.name] fail11")
+			if(!A.can_be_equiped(H))
 				continue
-			if(length(A.allowed_races) && !(H.dna.species.name in A.allowed_races))
-				testing("[A.name] fail22")
+			if(A.issiege)
 				continue
-			if(length(A.allowed_ages) && !(H.age in A.allowed_ages))
-				testing("[A.name] fail33")
-				continue
-			if(A.maxchosen > -1)
-				if(A.amtchosen >= A.maxchosen)
-					testing("[A.name] fail9")
-					continue
-
 			if((!isvillager && !ispilgrim) && (A.isvillager || A.ispilgrim)) //adventurer
 				continue
 
@@ -171,6 +199,10 @@ GLOBAL_VAR_INIT(adventurer_hugbox_duration_still, 3 MINUTES)
 	if(!advsetup)
 		testing("RETARD")
 		return TRUE
+	var/datum/game_mode/siege/S = SSticker.mode
+	if(istype(S) && possibleclass.len == 0)
+		alert(src, "Лорд ещё не выбрал приоритеты.", "ОСАДА", "Ок")
+		return FALSE
 	var/blacklisted = check_blacklist(ckey)
 	if(possibleclass.len && !blacklisted)
 		var/datum/advclass/C = input(src, "What is my class?", "Adventure") as null|anything in sortNames(possibleclass)
@@ -187,6 +219,7 @@ GLOBAL_VAR_INIT(adventurer_hugbox_duration_still, 3 MINUTES)
 			if(alert(src, "[C.name]\n[C.tutorial]", "Are you sure?", "Yes", "No") != "Yes")
 				return FALSE
 			if(advsetup)
+				GLOB.setuping_adventurers.Remove(src)
 				advsetup = 0
 				C.equipme(src)
 				invisibility = 0
@@ -194,6 +227,7 @@ GLOBAL_VAR_INIT(adventurer_hugbox_duration_still, 3 MINUTES)
 				return TRUE
 	else
 		testing("RETARD2")
+		GLOB.setuping_adventurers.Remove(src)
 		advsetup = 0
 		invisibility = 0
 		cure_blind("advsetup")

@@ -24,6 +24,18 @@
 	var/horse = FALSE
 	var/vampcompat = TRUE
 	var/list/traits_applied
+	var/issiege = FALSE
+
+/datum/advclass/proc/can_be_equiped(mob/living/carbon/human/H)
+	if(length(allowed_sexes) && !(H.gender in allowed_sexes))
+		return FALSE
+	if(length(allowed_races) && !(H.dna.species.name in allowed_races))
+		return FALSE
+	if(length(allowed_ages) && !(H.age in allowed_ages))
+		return FALSE
+	if(maxchosen > -1 && amtchosen >= maxchosen)
+		return FALSE
+	return TRUE
 
 /datum/advclass/proc/equipme(mob/living/carbon/human/H)
 	if(!H)

@@ -89,7 +89,15 @@
 			STR.handle_item_insertion(P, prevent_warning=TRUE)
 			X.new_mail=TRUE
 			X.update_icon()
-			send_ooc_note("New letter from <b>[sentfrom].</b>", name = send2place)
+			var/datum/game_mode/siege/S = SSticker.mode
+			var/mob/living/king = SSticker.rulermob
+			if(istype(S) && !S.war_declared && istype(king) && user.mind.has_antag_datum(/datum/antagonist/siege/siege_lord) && send2place == king.real_name)
+				send_ooc_note("ВАМ ПРИШЛО ВАЖНОЕ ПИСЬМО ОТ <b>[capitalize(user.real_name)]</b>, ЛОРДА ХАРТФЕЛТА!", name = send2place)
+				to_chat(user, "<span class='warning'>Война объявлена. Ваши войска могут выступать.</span>")
+				S.war_declared = TRUE
+				S.war_declaration = P.info
+			else
+				send_ooc_note("New letter from <b>[sentfrom].</b>", name = send2place)
 		else
 			to_chat(user, "<span class='warning'>The master of mails has perished?</span>")
 			return
@@ -124,6 +132,19 @@
 	if(istype(P, /obj/item/paper) || istype(P, /obj/item/smallDelivery))
 		if(P.w_class >= WEIGHT_CLASS_BULKY)
 			return
+		var/datum/game_mode/siege/S = SSticker.mode
+		// Запретить отправку письма раньше чем через 30 минут
+		// Установить минимум символов в письме, примерно на 100,
+		// если их меньше, то письмо не отправляется и просит написать его заново
+		if(istype(P, /obj/item/paper) && istype(S) && !S.war_declared)
+			if(S.war_can_be_declared_in > world.time)
+				to_chat(user, "<span class='boldwarning'>Слишком рано. Займитесь подготовкой армии.</span>")
+				return
+			var/obj/item/paper/p = P
+			if(length_char(p.info) <= 100)
+				to_chat(user, "<span class='boldnotice'>Ваш военный манифест слишком короток.</span>")
+				return
+
 		if(alert(user, "Send Mail?",,"YES","NO") == "YES")
 			var/send2place = input(user, "Where to? (Person or #number)", "ROGUETOWN", null)
 			var/sentfrom = input(user, "Who is this from?", "ROGUETOWN", null)
@@ -165,6 +186,14 @@
 					STR.handle_item_insertion(P, prevent_warning=TRUE)
 					X.new_mail=TRUE
 					X.update_icon()
+					var/mob/living/king = SSticker.rulermob
+					if(istype(P, /obj/item/paper))
+						if(istype(S) && !S.war_declared &&  istype(king) && user.mind.has_antag_datum(/datum/antagonist/siege/siege_lord) && send2place == king.real_name)
+							send_ooc_note("ВАМ ПРИШЛО ВАЖНОЕ ПИСЬМО ОТ <b>[capitalize(user.real_name)]</b>, ЛОРДА ХАРТФЕЛТА!", name = send2place)
+							to_chat(user, "<span class='warning'>Война объявлена. Ваши войска могут выступать.</span>")
+							S.war_declared = TRUE
+							var/obj/item/paper/p = P
+							S.war_declaration = p.info
 					playsound(src.loc, 'sound/misc/hiss.ogg', 100, FALSE, -1)
 				if(!findmaster)
 					to_chat(user, "<span class='warning'>The master of mails has perished?</span>")

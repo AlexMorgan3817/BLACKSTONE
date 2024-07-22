@@ -30,6 +30,7 @@ GLOBAL_LIST_INIT(huds, list(
 	ANTAG_HUD_FUGITIVE = new/datum/atom_hud/antag(),
 
 	ROGUE_HUD_MARRIED = new/datum/atom_hud/antag()
+	,26 = new/datum/atom_hud/antag(),
 	))
 
 /datum/atom_hud

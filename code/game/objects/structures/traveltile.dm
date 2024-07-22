@@ -64,6 +64,14 @@
 		if(!fou)
 			to_chat(user, "<b>It is a dead end.</b>")
 
+/obj/structure/fluff/traveltile/proc/travel_to(mob/living/L, obj/structure/fluff/traveltile/T)
+	L.recent_travel = world.time
+	L.forceMove(T.loc)
+	var/atom/movable/pullingg = L.pulling
+	if(pullingg)
+		pullingg.forceMove(T.loc)
+		pullingg.recent_travel = world.time
+		L.start_pulling(pullingg, supress_message = TRUE)
 
 /obj/structure/fluff/traveltile/attack_hand(mob/user)
 	var/fou
@@ -79,15 +87,7 @@
 				return
 			to_chat(user, "<b>I begin to travel...</b>")
 			if(do_after(user, 50, target = src))
-				var/mob/living/L = user
-				var/atom/movable/pullingg = L.pulling
-				L.recent_travel = world.time
-				if(pullingg)
-					pullingg.forceMove(T.loc)
-					pullingg.recent_travel = world.time
-				L.forceMove(T.loc)
-				if(pullingg)
-					L.start_pulling(pullingg, supress_message = TRUE)
+				travel_to(user, T)
 			fou = TRUE
 			break
 	if(!fou)
@@ -122,15 +122,7 @@
 			if(do_after(AM, 50, target = src))
 				if(!can_go(AM))
 					return
-				var/mob/living/L = AM
-				var/atom/movable/pullingg = L.pulling
-				L.recent_travel = world.time
-				if(pullingg)
-					pullingg.forceMove(T.loc)
-					pullingg.recent_travel = world.time
-				L.forceMove(T.loc)
-				if(pullingg)
-					L.start_pulling(pullingg, supress_message = TRUE)
+				travel_to(AM, T)
 			fou = TRUE
 			break
 	if(!fou)
